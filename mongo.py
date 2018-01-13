@@ -9,23 +9,18 @@ class Mongodb(object):
     HOST = "localhost"
     PORT = int(27017)
 
-    def __init__(self, host=None, port=None, username=None, password=None, args_results=None):
+    def __init__(self, args_results=None):
 
-        self.args_results = args_results
-        if host is None:
+        if args_results.host is None:
             self.host = self.HOST
         else:
-            self.host = host
-        if port is None:
+            self.host = args_results.host
+        if args_results.port is None:
             self.port = self.PORT
         else:
-            self.port = port
+            self.port = int(args_results.port)
         if not isinstance(self.port, int):
             raise TypeError("port must be an instance of int")
-        if username is None:
-            self.username = None
-        if password is None:
-            self.password = None
 
         try:
             self.mongo_conn = Mongodb.est_mongodb_connection(self)
@@ -101,10 +96,7 @@ class Mongodb(object):
         return coll_names_dict
 
     def est_mongodb_connection(self):
-        if self.username and self.password == None:
-            mongo_conn = MongoClient(host=self.host, port=self.port)
-        else:
-            mongo_conn = MongoClient(host=self.host, port=self.port, username=self.username, password=self.password)
+        mongo_conn = MongoClient(host=self.host, port=self.port)
         return mongo_conn
 
     def print_indexstats_results(self, index_stat_results):
