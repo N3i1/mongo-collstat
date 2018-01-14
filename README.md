@@ -59,8 +59,8 @@ pip install argparse
 ### Requirments
 
  Mongodb running wired tiger storage engine
-  
-
+ In order to report on slaves, SlaveOk needs to be set
+ 
 ### Sample
 
 Running:
