@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 import pymongo
+
 """
  
 """
@@ -15,18 +16,38 @@ class Mongodb(object):
             self.host = self.HOST
         else:
             self.host = args_results.host
+
         if args_results.port is None:
             self.port = self.PORT
         else:
             self.port = int(args_results.port)
-        if not isinstance(self.port, int):
-            raise TypeError("port must be an instance of int")
 
-        try:
-            self.mongo_conn = Mongodb.est_mongodb_connection(self)
+        self.members_list = []
 
-        except ConnectionError as e:
-            print(e)
+        if args_results.discover is None:
+            try:
+                self.members_list.append(Mongodb.est_mongodb_connection(self))
+            except ConnectionError as e:
+                print(e)
+        else:
+            try:
+
+                self.mongo_conn = Mongodb.est_mongodb_connection(self)
+                #TODO Add in function to find members, return a list[]
+                self.memebers = Mongodb.find_rep_members(self)
+                for m in self.memebers:
+                    host, port = m.split(":")
+                    self.members_list.append(Mongodb.mongodb_conn(self, host, int(port)))
+            except ConnectionError as e:
+                print(e)
+
+    def find_rep_members(self):
+        discover = self.mongo_conn["admin"].command("replSetGetStatus", "admin")
+        members = []
+        for value in discover['members']:
+            if "ARBITER" not in value['stateStr']:
+                members.append(value['name'])
+        return members
 
     def get_db_names(self, arg_results, list_all="no"):
         """
@@ -35,7 +56,7 @@ class Mongodb(object):
         :return: list of database names
         """
         try:
-            db_names = list(self.mongo_conn.database_names())
+            db_names = list(self.members_list[0].database_names())
         except EnvironmentError:
             print("no db names")
 
@@ -76,7 +97,7 @@ class Mongodb(object):
         coll_names_dict = {}
         coll = []
         for i in mongodb_db_names:
-            coll = self.mongo_conn[i].collection_names()
+            coll = self.members_list[0][i].collection_names()
             coll_names_dict[i] = coll
 
         # When we get to here we have a dict(list[])
@@ -92,8 +113,12 @@ class Mongodb(object):
                         coll.clear()
                         coll.append(arg_results.coll_name)
                         coll_names_dict[key] = coll
-                    #return coll_names_dict
+                    # return coll_names_dict
         return coll_names_dict
+
+    def mongodb_conn(self, host=None, port=None):
+        conn = MongoClient(host=host, port=port)
+        return conn
 
     def est_mongodb_connection(self):
         mongo_conn = MongoClient(host=self.host, port=self.port)
@@ -144,10 +169,11 @@ class Mongodb(object):
         Return a dict() =  { collection_name: collection_stats{} }
         """
         coll_stats_results = {}
-        for db_name in mongo_db_names:
-            for collection_name in mongodb_coll_names[db_name]:
-                coll_stats = self.mongo_conn[db_name].command("collstats", collection_name)
-                coll_stats_results[collection_name] = coll_stats
+        for i in range(len(self.members_list)):
+            for db_name in mongo_db_names:
+                for collection_name in mongodb_coll_names[db_name]:
+                    coll_stats = self.members_list[i][db_name].command("collstats", collection_name)
+                    coll_stats_results[collection_name] = coll_stats
         return coll_stats_results
 
     def run_dbServerStatus(self):
@@ -222,4 +248,31 @@ class Mongodb(object):
         # TODO Handle a list of indexes
         return dict(parent_stat[index_name])
 
-# if __name__ == "__main__":
+    def mongoCollStat(self, mongo_db_names, mongodb_coll_names):
+        print('{:30} {:6} {:6} {:6} {:6} '.format("CollName", "BytesIn", "ReadIn", "WrittenIn", "PageRe"))
+        for i in range(len(self.members_list)):
+            print(self.members_list[i]['name'])
+            for db_name in mongo_db_names:
+                for collection_name in mongodb_coll_names[db_name]:
+                    coll_stats_results = Mongodb.run_collstats(self, mongo_db_names, mongodb_coll_names)
+                    coll_stats_parent_storgae = Mongodb.parse_collstat_parent_doc(self, coll_stats_results[collection_name],
+                                                                              "wiredTiger")
+
+                    print('{:30}'.format(coll_stats_results[collection_name]['ns']),
+                        '{:6d}'.format(coll_stats_parent_storgae["cache"]['bytes currently in the cache']),
+                        '{:6}'.format(coll_stats_parent_storgae["cache"]['bytes read into cache']),
+                        '{:6}'.format(coll_stats_parent_storgae["cache"]['bytes written from cache']),
+                        '{:6}'.format(coll_stats_parent_storgae["cache"]['pages requested from the cache']))
+                    coll_stats_parent_index = Mongodb.parse_collstat_parent_doc(self, coll_stats_results[collection_name],
+                                                                            "indexDetails")
+                    for key, value in coll_stats_parent_index.items():
+                        indx_name = key
+                     # coll_stats_parent_index[indx_name])#['metadata']['infoObj']["ns"])
+                        coll_stats_child_doc = Mongodb.parse_collstat_sub_docs(self, coll_stats_parent_index[key], "cache")
+                        print('{:30}'.format("  " + key),
+                            '{:6}'.format(coll_stats_child_doc['bytes currently in the cache']),
+                            '{:6}'.format(coll_stats_child_doc['bytes read into cache']),
+                            '{:6}'.format(coll_stats_child_doc['bytes written from cache']),
+                            '{:6}'.format(coll_stats_child_doc['pages requested from the cache']))
+
+                # if __name__ == "__main__":
