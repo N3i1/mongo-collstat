@@ -1,11 +1,32 @@
 Reporting tool for mongoDB
 ===========================
-dba-mongo-report
+##### mongo-collstat:
 
-Uses metrics from collStats and indexstats at present and generate a simple report.
+ Gathers memory usage metrics for collections and indexes. Auto discovers replica set memebers:
+ 
+  ```python
+  $:> mongo-collstat.py
+```
+
+![alt tag](screenshots/mongoCollstat.JPG)
+ 
+#####dba-mongo-report
+
+ Present information in a report format:
+ 
+  ```python
+    main.py -d test -c restaurants
+```
+Would yeild:
+
+![alt tag](screenshots/db_report.PNG)
+
 
 ### Usage
-Please note. If you do not provide a "host" and/or "port" localhost and 27017 are used.
+
+Please note: 
+
+If you do not provide a "host" and/or "port" localhost and 27017 are used.
 
  You can run dba-mongo-report for either;
  
@@ -59,18 +80,7 @@ pip install argparse
 ### Requirments
 
  Mongodb running wired tiger storage engine
- In order to report on slaves, SlaveOk needs to be set
  
-### Sample
-
-Running:
-
- ```python
-    main.py -d test -c restaurants
-```
-Would yeild:
-
-![alt tag](screenshots/db_report.PNG)
 
 
 
