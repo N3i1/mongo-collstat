@@ -2,11 +2,20 @@ Reporting tool for mongoDB
 ===========================
 ##### mongo-collstat:
 
- Gathers memory usage metrics for collections and indexes. Auto discovers replica set memebers:
+ Gathers memory usage metrics for collections and indexes. Auto discovers replica set members:
+
+ Just add in your hostname and port for the primary instance on line 5
  
   ```python
   $:> mongo-collstat.py
 ```
+* name = db.collection_name or index name (if indented)
+* used = bytes currently in the cache
+* dirty = tracked dirty bytes in the cache
+* pri = pages read into cache
+* pwf = pages written from cache
+* prq = pages requested from the cache
+* ops = Ops from $indexStats
 
 ![alt tag](screenshots/mongoCollstat.JPG)
  
