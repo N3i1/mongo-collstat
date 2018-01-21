@@ -1,7 +1,8 @@
 from pymongo import MongoClient
 from pymongo import ReadPreference
+import pymongo
 
-pri_conn = MongoClient()
+pri_conn = MongoClient(host="", port=)
 
 discover = pri_conn["admin"].command("replSetGetStatus", "admin")
 
@@ -36,7 +37,7 @@ for i in db_names:
 
 coll_stats_results = {}
 
-print('{:30} {:6} {:6} {:6} '.format("CollName", "BtyesUsed", "ReadIn", "WrittenIn"))
+print('{:30} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}'.format("name", "used", "dirty","pri", "pwf", "prq", "ops"))
 
 for db_name in db_names:
 
@@ -47,19 +48,34 @@ for db_name in db_names:
         coll_stats = pri_conn[db_name].command("collstats", collection_name)
         coll_stats_results[collection_name] = coll_stats
 
-        print('{:30}'.format("  " + coll_stats_results[collection_name]['ns']),
-              '{:6}'.format(coll_stats_results[collection_name]["wiredTiger"]["cache"]["bytes currently in the cache"]),
-              '{:6}'.format(coll_stats_results[collection_name]["wiredTiger"]["cache"]["bytes read into cache"]),
-              '{:6}'.format(coll_stats_results[collection_name]["wiredTiger"]["cache"]["bytes written from cache"]))
+        print('{:30}'.format(" " + coll_stats_results[collection_name]['ns']),
+              '{:10}'.format(coll_stats_results[collection_name]["wiredTiger"]["cache"]["bytes currently in the cache"]),
+              '{:10}'.format(coll_stats_results[collection_name]["wiredTiger"]["cache"]["tracked dirty bytes in the cache"]),
+              '{:10}'.format(coll_stats_results[collection_name]["wiredTiger"]["cache"]["pages read into cache"]),
+              '{:10}'.format(coll_stats_results[collection_name]["wiredTiger"]["cache"]["pages written from cache"]),
+              '{:10}'.format(coll_stats_results[collection_name]["wiredTiger"]["cache"]["pages requested from the cache"]))
         coll_index = {}
         coll_index[collection_name] = coll_stats_results[collection_name]["indexDetails"]
 
         for key, value in coll_index[collection_name].items():
             indx_n = key
+            pipeline = [{"$indexStats": {}}]
+            index_stat_results = {}
+            query = pymongo.collection.Collection(pri_conn[db_name], name=collection_name)
+            cursor = query.aggregate(pipeline)
+            res = list(cursor)
+            for v in res:
+                name = v['name']
+                index_stat_results[name] = v
+
             print('{:30}'.format("  " + key),
-                  '{:6}'.format(coll_index[collection_name][indx_n]["cache"]["bytes currently in the cache"]),
-                  '{:6}'.format(coll_index[collection_name][indx_n]["cache"]["bytes read into cache"]),
-                  '{:6}'.format(coll_index[collection_name][indx_n]["cache"]["bytes written from cache"]))
+                  '{:10}'.format(coll_index[collection_name][indx_n]["cache"]["bytes currently in the cache"]),
+                  '{:10}'.format(coll_index[collection_name][indx_n]["cache"]["tracked dirty bytes in the cache"]),
+                  '{:10}'.format(coll_index[collection_name][indx_n]["cache"]["pages read into cache"]),
+                  '{:10}'.format(coll_index[collection_name][indx_n]["cache"]["pages written from cache"]),
+                  '{:10}'.format(coll_index[collection_name][indx_n]["cache"]["pages requested from the cache"]),
+                  '{:10}'.format(index_stat_results[indx_n]['accesses']['ops']))
+
 
 # Secondarys
 for i in range(len(sec_conns)):
@@ -73,16 +89,29 @@ for i in range(len(sec_conns)):
             coll_stats = sec_conns[i][db_name].command("collstats", collection_name)
             coll_stats_results[collection_name] = coll_stats
             print('{:30}'.format(coll_stats_results[collection_name]['ns']),
-                  '{:6}'.format(
+                  '{:10}'.format(
                       coll_stats_results[collection_name]["wiredTiger"]["cache"]["bytes currently in the cache"]),
-                  '{:6}'.format(coll_stats_results[collection_name]["wiredTiger"]["cache"]["bytes read into cache"]),
-                  '{:6}'.format(coll_stats_results[collection_name]["wiredTiger"]["cache"]["bytes written from cache"]))
+                  '{:10}'.format(coll_stats_results[collection_name]["wiredTiger"]["cache"]["tracked dirty bytes in the cache"]),
+                  '{:10}'.format(coll_stats_results[collection_name]["wiredTiger"]["cache"]["pages read into cache"]),
+                  '{:10}'.format(coll_stats_results[collection_name]["wiredTiger"]["cache"]["pages written from cache"]),
+                  '{:10}'.format(coll_stats_results[collection_name]["wiredTiger"]["cache"]["pages requested from the cache"]))
             coll_index = {}
             coll_index[collection_name] = coll_stats_results[collection_name]["indexDetails"]
 
             for key, value in coll_index[collection_name].items():
                 indx_n = key
-                print('{:30}'.format(key),
-                      '{:6}'.format(coll_index[collection_name][indx_n]["cache"]["bytes currently in the cache"]),
-                      '{:6}'.format(coll_index[collection_name][indx_n]["cache"]["bytes read into cache"]),
-                      '{:6}'.format(coll_index[collection_name][indx_n]["cache"]["bytes written from cache"]))
+                pipeline = [{"$indexStats": {}}]
+                index_stat_results = {}
+                query = pymongo.collection.Collection(sec_conns[i][db_name], name=collection_name)
+                cursor = query.aggregate(pipeline)
+                res = list(cursor)
+                for v in res:
+                    name = v['name']
+                    index_stat_results[name] = v
+                print('{:30}'.format("  " + key),
+                      '{:10}'.format(coll_index[collection_name][indx_n]["cache"]["bytes currently in the cache"]),
+                      '{:10}'.format(coll_index[collection_name][indx_n]["cache"]["tracked dirty bytes in the cache"]),
+                      '{:10}'.format(coll_index[collection_name][indx_n]["cache"]["pages read into cache"]),
+                      '{:10}'.format(coll_index[collection_name][indx_n]["cache"]["pages written from cache"]),
+                      '{:10}'.format(coll_index[collection_name][indx_n]["cache"]["pages requested from the cache"]),
+                      '{:10}'.format(index_stat_results[indx_n]['accesses']['ops']))
