@@ -124,11 +124,11 @@ class Collstats(object):
 
 def main():
     parser = argparse.ArgumentParser(description='dba-mongodb-reporting')
-    parser.add_argument('--host', help='hostname', action='store', dest='host', default=None)
-    parser.add_argument('--port', help='port number', action='store', dest='port', default=None, )
-    parser.add_argument('--db', help='database_name', action='store', dest='database_name', required=True)
-    parser.add_argument('--coll', action='store', dest='collection_name', help='collection name', required=True)
-    parser.add_argument('--discover', action='store_true', dest='discover', help='Discover repset members',
+    parser.add_argument('-host', help='hostname', action='store', dest='host', default=None)
+    parser.add_argument('-port', help='port number', action='store', dest='port', default=None, )
+    parser.add_argument('-db', help='database_name', action='store', dest='database_name', required=True)
+    parser.add_argument('-coll', action='store', dest='collection_name', help='collection name', required=True)
+    parser.add_argument('-discover', action='store_true', dest='discover', help='Discover repset members',
                         default=None)
     arg_results = parser.parse_args()
 
