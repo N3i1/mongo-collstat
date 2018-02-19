@@ -8,7 +8,7 @@ Collection level buffer cache reporting for MongoDB
  
 
   ```python
-python collstats.py --host 192.0.0.1 --port 40000 --db test --coll foo --discover
+python collstats.py `--`host 192.0.0.1 --port 40000 --db test --coll foo --discover
 ```
 
 ![alt tag](screenshots/mongoCollstat.JPG)
